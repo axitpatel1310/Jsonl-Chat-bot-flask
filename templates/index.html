@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+</head>
+<body>
+    <h2>Simple Chatbot</h2>
+    <div id="chat"></div>
+    <input type="text" id="message" placeholder="Type here">
+    <button onclick="send()">Send</button> 
+    <br>
+    <input type="file" id="file" accept=".jsonl">
+    <button onclick="upload()">Load JSONL</button>
+    <br>
+    <button onclick="train()">Train</button>
+    <script>
+        function addChat(user, bot) {
+            let chat = document.getElementById("chat");
+            if (user) chat.innerHTML += `<p><b>You:</b> ${user}</p>`;
+            if (bot) chat.innerHTML += `<p><b>Bot:</b> ${bot}</p>`;
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        function send() {
+            let msg = document.getElementById("message").value.trim();
+            if (!msg) return;
+            let formData = new FormData();
+            formData.append("message", msg);
+            fetch("/chat", {
+                method: "POST",
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                addChat(data.user, data.bot);
+                document.getElementById("message").value = "";
+            })
+            .catch(err => addChat("", "Error: Can’t chat"));
+        }
+
+        function upload() {
+            let fileInput = document.getElementById("file");
+            let file = fileInput.files[0];
+            if (!file) {
+                addChat("", "No file selected");
+                return;
+            }
+            let formData = new FormData();
+            formData.append("file", file);
+            fetch("/upload", {
+                method: "POST",
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                addChat("", data.status);
+                fileInput.value = "";
+            })
+            .catch(err => addChat("", "Error: Can’t upload"));
+        }
+
+        function train() {
+            let prompt = prompt("Enter prompt:");
+            if (!prompt) return;
+            let response = prompt("Enter response:");
+            if (!response) return;
+            let formData = new FormData();
+            formData.append("prompt", prompt);
+            formData.append("response", response);
+            fetch("/train", {
+                method: "POST",
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => addChat("", data.status))
+            .catch(err => addChat("", "Error: Can’t train"));
+        }
+
+        document.getElementById("message").addEventListener("keypress", e => {
+            if (e.key === "Enter") send();
+        });
+    </script>
+</body>
+</html>
