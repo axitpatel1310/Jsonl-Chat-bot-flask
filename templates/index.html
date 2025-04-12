@@ -1,83 +1,293 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot</title>
+    <style>
+        :root {
+            --navy-blue: #001f3f;
+            --light-navy: #003366;
+            --accent-blue: #0074D9;
+            --light-accent: #7FDBFF;
+            --text-light: #F5F5F5;
+            --text-muted: #CCCCCC;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --border-radius: 8px;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        
+        h2 {
+            background-color: var(--navy-blue);
+            color: white;
+            margin: 0;
+            padding: 20px;
+            font-size: 1.5rem;
+            text-align: center;
+        }
+        
+        #chat {
+            height: 400px;
+            overflow-y: auto;
+            padding: 20px;
+            background-color: white;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        #chat p {
+            margin: 0;
+            padding: 12px 16px;
+            border-radius: var(--border-radius);
+            max-width: 70%;
+            line-height: 1.4;
+            position: relative;
+        }
+        
+        #chat p b {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.8rem;
+            color: var(--navy-blue);
+        }
+        
+        #chat p:nth-child(odd) {
+            align-self: flex-start;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+        }
+        
+        #chat p:nth-child(even) {
+            align-self: flex-end;
+            background-color: var(--accent-blue);
+            color: white;
+        }
+        
+        #chat p:nth-child(even) b {
+            color: var(--light-accent);
+        }
+        
+        .input-area {
+            display: flex;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-top: 1px solid #eee;
+            gap: 10px;
+        }
+        
+        #message {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            outline: none;
+            transition: border 0.3s;
+        }
+        
+        #message:focus {
+            border-color: var(--accent-blue);
+        }
+        
+        button {
+            background-color: var(--navy-blue);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: var(--light-navy);
+        }
+        
+        .file-upload {
+            display: flex;
+            padding: 0 15px 15px;
+            gap: 10px;
+        }
+        
+        #file {
+            flex: 1;
+            padding: 10px;
+            border: 1px dashed #ccc;
+            border-radius: var(--border-radius);
+            background-color: #f9f9f9;
+        }
+        
+        .train-btn {
+            display: block;
+            width: calc(100% - 30px);
+            margin: 0 15px 15px;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                width: 95%;
+            }
+            
+            .input-area, .file-upload {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h2>Simple Chatbot</h2>
-    <div id="chat"></div>
-    <input type="text" id="message" placeholder="Type here">
-    <button onclick="send()">Send</button> 
-    <br>
-    <input type="file" id="file" accept=".jsonl">
-    <button onclick="upload()">Load JSONL</button>
-    <br>
-    <button onclick="train()">Train</button>
+    <div class="container">
+        <h2>Simple Chat Bot</h2>
+        
+        <div id="chat"></div>
+        
+        <div class="input-area">
+            <input type="text" id="message" placeholder="Type your message here..." autocomplete="off">
+            <button onclick="send()">Send</button>
+        </div>
+        
+        <div class="file-upload">
+            <input type="file" id="file" accept=".jsonl">
+            <button onclick="upload()">Upload Data</button>
+        </div>
+        
+        <button class="train-btn" onclick="train()">Train Model</button>
+    </div>
+
     <script>
         function addChat(user, bot) {
             let chat = document.getElementById("chat");
-            if (user) chat.innerHTML += `<p><b>You:</b> ${user}</p>`;
-            if (bot) chat.innerHTML += `<p><b>Bot:</b> ${bot}</p>`;
+            if (user) {
+                chat.innerHTML += `<p><b>You:</b> ${user}</p>`;
+            }
+            if (bot) {
+                chat.innerHTML += `<p><b>Assistant:</b> ${bot}</p>`;
+            }
             chat.scrollTop = chat.scrollHeight;
         }
 
         function send() {
             let msg = document.getElementById("message").value.trim();
             if (!msg) return;
+            
+            addChat(msg, "");
+            document.getElementById("message").value = "";
+            
             let formData = new FormData();
             formData.append("message", msg);
+            
             fetch("/chat", {
                 method: "POST",
                 body: formData
             })
             .then(res => res.json())
             .then(data => {
-                addChat(data.user, data.bot);
-                document.getElementById("message").value = "";
+                if (data.bot) {
+                    let lastBotMsg = document.querySelector("#chat p:last-child");
+                    if (lastBotMsg && !lastBotMsg.querySelector("b")) {
+                        lastBotMsg.innerHTML = `<b>Assistant:</b> ${data.bot}`;
+                    } else {
+                        addChat("", data.bot);
+                    }
+                }
             })
-            .catch(err => addChat("", "Error: Can’t chat"));
+            .catch(err => {
+                addChat("", "Error: Unable to process your message");
+                console.error("Chat error:", err);
+            });
         }
 
         function upload() {
             let fileInput = document.getElementById("file");
             let file = fileInput.files[0];
             if (!file) {
-                addChat("", "No file selected");
+                addChat("", "Please select a file first");
                 return;
             }
+            
+            addChat("", "Uploading file...");
+            
             let formData = new FormData();
             formData.append("file", file);
+            
             fetch("/upload", {
                 method: "POST",
                 body: formData
             })
             .then(res => res.json())
             .then(data => {
-                addChat("", data.status);
+                addChat("", data.status || "File uploaded successfully");
                 fileInput.value = "";
             })
-            .catch(err => addChat("", "Error: Can’t upload"));
+            .catch(err => {
+                addChat("", "Error: File upload failed");
+                console.error("Upload error:", err);
+            });
         }
 
         function train() {
-            let prompt = prompt("Enter prompt:");
+            let prompt = window.prompt("Enter training prompt:");
             if (!prompt) return;
-            let response = prompt("Enter response:");
+            
+            let response = window.prompt("Enter desired response:");
             if (!response) return;
+            
+            addChat("", "Training model...");
+            
             let formData = new FormData();
             formData.append("prompt", prompt);
             formData.append("response", response);
+            
             fetch("/train", {
                 method: "POST",
                 body: formData
             })
             .then(res => res.json())
-            .then(data => addChat("", data.status))
-            .catch(err => addChat("", "Error: Can’t train"));
+            .then(data => {
+                addChat("", data.status || "Model trained successfully");
+            })
+            .catch(err => {
+                addChat("", "Error: Training failed");
+                console.error("Training error:", err);
+            });
         }
 
+        // Handle Enter key press
         document.getElementById("message").addEventListener("keypress", e => {
             if (e.key === "Enter") send();
         });
+
+        // Initial welcome message
+        window.onload = function() {
+            setTimeout(() => {
+                addChat("", "Hello! How can I assist you today?");
+            }, 500);
+        };
     </script>
 </body>
 </html>
